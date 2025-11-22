@@ -26,7 +26,7 @@ It integrates easily into CI/CD pipelines and can target a single dashboard or a
 ### **Add a version marker during deployment**
 
 ```
-cw-annotate annotate \
+cwnote annotate \
   --dashboard MyServiceDashboard \
   --label version \
   --value "$(git describe --tags --long)"
@@ -35,7 +35,7 @@ cw-annotate annotate \
 ### **Annotate multiple dashboards at once**
 
 ```
-cw-annotate annotate \
+cwnote annotate \
   --dashboard-prefix MyService- \
   --label deploy \
   --value "release-2025-01-20"
@@ -48,7 +48,7 @@ cw-annotate annotate \
 Useful if your dashboards have many graphs, but you only want version lines on a specific group:
 
 ```
-cw-annotate annotate \
+cwnote annotate \
   --dashboard MyServiceDashboard \
   --label version \
   --value "1.9.0" \
@@ -58,7 +58,7 @@ cw-annotate annotate \
 ### Provide an explicit timestamp
 
 ```
-cw-annotate annotate \
+cwnote annotate \
   --dashboard MyServiceDashboard \
   --label incident \
   --value "INC-4435: DB outage" \
@@ -68,7 +68,7 @@ cw-annotate annotate \
 ### Dry-run mode
 
 ```
-cw-annotate annotate \
+cwnote annotate \
   --dashboard-prefix MyService- \
   --label version \
   --value "preview-run" \
@@ -81,8 +81,8 @@ cw-annotate annotate \
 ### From source
 
 ```
-git clone https://github.com/your-org/cw-annotate
-cd cw-annotate
+git clone https://github.com/your-org/cwnote
+cd cwnote
 cargo install --path .
 ```
 
@@ -95,7 +95,7 @@ cargo build --release
 Binary will be at:
 
 ```
-target/release/cw-annotate
+target/release/cwnote
 ```
 
 
@@ -103,7 +103,7 @@ target/release/cw-annotate
 ## Authentication & AWS Regions
 
 
-cw-annotate uses standard AWS credential resolution.
+cwnote uses standard AWS credential resolution.
 
 You may override the region:
 
@@ -118,7 +118,7 @@ You may override the region:
 
 CloudWatch dashboards are JSON documents containing arrays of widgets.
 
-cw-annotate:
+cwnote:
 
 1. Downloads the dashboard JSON using GetDashboard
 2. Locates metric widgets
@@ -146,7 +146,7 @@ Multiple annotations stack naturally and are visible as vertical lines on graphs
 ### **annotate**
 
 ```
-cw-annotate annotate [OPTIONS]
+cwnote annotate [OPTIONS]
 ```
 
 **Options:**
