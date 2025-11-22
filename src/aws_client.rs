@@ -31,3 +31,24 @@ pub async fn make_client(region: Option<&str>) -> Result<Client> {
 
     Ok(Client::new(&config))
 }
+
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[tokio::test]
+    async fn explicit_region_override_wins() {
+        let client = make_client(Some("eu-central-1"))
+            .await
+            .expect("client should be created");
+
+        let region = client
+            .config()
+            .region()
+            .expect("region must be set")
+            .as_ref();
+
+        assert_eq!(region, "eu-central-1");
+    }
+}
