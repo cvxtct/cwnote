@@ -3,7 +3,7 @@ A  lightweight Rust CLI tool for automatically inserting **vertical annotations*
 
 It integrates easily into CI/CD pipelines and can target a single dashboard or a whole set of dashboards sharing a prefix.
 
-## **Features**
+### **Features**
 
 - Annotate **single dashboards** or **multiple dashboards by prefix**
 - Add fully custom annotations:
@@ -19,11 +19,11 @@ It integrates easily into CI/CD pipelines and can target a single dashboard or a
 
 
 
-## **Example Usage**
+### **Example Usage**
 
   
 
-### **Add a version marker during deployment**
+#### **Add a version marker during deployment**
 
 ```
 cwnote annotate \
@@ -32,7 +32,7 @@ cwnote annotate \
   --value "$(git describe --tags --long)"
 ```
 
-### **Annotate multiple dashboards at once**
+#### **Annotate multiple dashboards at once**
 
 ```
 cwnote annotate \
@@ -41,7 +41,7 @@ cwnote annotate \
   --value "release-2025-01-20"
 ```
 
-### **Only annotate widgets whose title contains a keyword**
+#### **Only annotate widgets whose title contains a keyword**
 
   
 
@@ -55,7 +55,7 @@ cwnote annotate \
   --widget-title-contains "Latency"
 ```
 
-### Provide an explicit timestamp
+#### Provide an explicit timestamp
 
 ```
 cwnote annotate \
@@ -65,7 +65,7 @@ cwnote annotate \
   --time "2025-01-20T12:00:00Z"
 ```
 
-### Dry-run mode
+#### Dry-run mode
 
 ```
 cwnote annotate \
@@ -76,9 +76,9 @@ cwnote annotate \
 ```
 
 
-## Installation
+### Installation
 
-### From source
+#### From source
 
 ```
 git clone https://github.com/your-org/cwnote
@@ -100,7 +100,7 @@ target/release/cwnote
 
 
 
-## Authentication & AWS Regions
+### Authentication & AWS Regions
 
 
 cwnote uses standard AWS credential resolution.
@@ -113,7 +113,7 @@ You may override the region:
 
 
 
-## How It Works
+### How It Works
 
 
 CloudWatch dashboards are JSON documents containing arrays of widgets.
@@ -139,11 +139,11 @@ Multiple annotations stack naturally and are visible as vertical lines on graphs
 
 
 
-## Command Reference
+### Command Reference
 
   
 
-### **annotate**
+#### **annotate**
 
 ```
 cwnote annotate [OPTIONS]
