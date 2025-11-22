@@ -1,6 +1,8 @@
-use clap::{Parser, Subcommand};
+use clap::Parser;
 
-/// CloudWatch dashoard vertical annotator.
+/**
+CloudWatch dashoard vertical annotator.
+*/
 #[derive(Debug, Parser)]
 #[command(name = "cwnote")]
 #[command(version, about = "Add annotation to CloudWatch dashboards.", long_about = None)]
