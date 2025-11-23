@@ -1,11 +1,11 @@
 `cwnote`  - Add vertical annotations to CloudWatch dashboards from CLI
 A  lightweight Rust CLI tool for automatically inserting **vertical annotations** (version markers, incident markers, deploy events, alarms, etc.) into **AWS CloudWatch dashboards**.
 
-It integrates easily into CI/CD pipelines and can target a single dashboard or a whole set of dashboards sharing a prefix.
+It integrates easily into CI/CD pipelines and can target a single dashboard or a whole set of dashboards sharing a suffix.
 
 ### **Features**
 
-- Annotate **single dashboards** or **multiple dashboards by prefix**
+- Annotate **single dashboards** or **multiple dashboards by suffix**
 - Add fully custom annotations:
     
     - --label (e.g. "version", "incident", "deploy", "alarm")
@@ -36,7 +36,7 @@ cwnote annotate \
 
 ```
 cwnote annotate \
-  --dashboard-prefix MyService- \
+  --dashboard-suffix MyService- \
   --label deploy \
   --value "release-2025-01-20"
 ```
@@ -69,7 +69,7 @@ cwnote annotate \
 
 ```
 cwnote annotate \
-  --dashboard-prefix MyService- \
+  --dashboard-suffix MyService- \
   --label version \
   --value "preview-run" \
   --dry-run
@@ -122,7 +122,7 @@ cwnote:
 
 1. Downloads the dashboard JSON using GetDashboard
 2. Locates metric widgets
-3. Applies optional filters (title substring, prefix matches)
+3. Applies optional filters (title substring, suffix matches)
 4. Appends an annotation of the form:
 
 ```
@@ -154,7 +154,7 @@ cwnote annotate [OPTIONS]
 |**Option**|**Description**|
 |---|---|
 |--dashboard <name>|Annotate a specific dashboard|
-|--dashboard-prefix <prefix>|Annotate all dashboards starting with prefix|
+|--dashboard-suffix <suffix>|Annotate all dashboards starting with suffix|
 |--label <string>|Annotation label (e.g. version, incident, deploy)|
 |--value <string>|Annotation text/value|
 |--time <ISO8601>|Custom timestamp (default: UTC now)|
