@@ -161,27 +161,27 @@ pub async fn annotate_single_dashboard(
     Ok(())
 }
 
-/// Annotate all dashboards whose name starts with the given prefix.
-pub async fn annotate_dashboards_by_prefix(
+/// Annotate all dashboards whose name starts with the given suffix.
+pub async fn annotate_dashboards_by_suffix(
     client: &Client,
-    prefix: &str,
+    suffix: &str,
     label: &str,
     value: &str,
     time_override: Option<&str>,
     dry_run: bool,
     selector: &WidgetSelector,
 ) -> Result<()> {
-    let dashboards = list_dashboards_with_prefix(client, prefix).await?;
+    let dashboards = list_dashboards_with_suffix(client, suffix).await?;
 
     if dashboards.is_empty() {
-        println!("No dashboards found with prefix '{}'", prefix);
+        println!("No dashboards found with suffix '{}'", suffix);
         return Ok(());
     }
 
     println!(
-        "{} dashboard(s) match prefix '{}':",
+        "{} dashboard(s) match suffix '{}':",
         dashboards.len(),
-        prefix
+        suffix
     );
     for d in &dashboards {
         println!("  - {}", d);
@@ -203,8 +203,8 @@ pub async fn annotate_dashboards_by_prefix(
     Ok(())
 }
 
-/// List dashboards whose names start with the given prefix.
-async fn list_dashboards_with_prefix(client: &Client, prefix: &str) -> Result<Vec<String>> {
+/// List dashboards whose names start with the given suffix.
+async fn list_dashboards_with_suffix(client: &Client, suffix: &str) -> Result<Vec<String>> {
     let mut result = Vec::new();
     let mut next_token: Option<String> = None;
 
@@ -220,7 +220,7 @@ async fn list_dashboards_with_prefix(client: &Client, prefix: &str) -> Result<Ve
 
         for entry in entries {
             if let Some(name) = entry.dashboard_name() {
-                if name.starts_with(prefix) {
+                if name.ends_with(suffix) {
                     result.push(name.to_string());
                 }
             }

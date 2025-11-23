@@ -29,7 +29,7 @@ async fn run_with_client(
                 title_contains: opts.widget_title_contains.clone(),
             };
 
-            match (opts.dashboard.as_deref(), opts.dashboard_prefix.as_deref()) {
+            match (opts.dashboard.as_deref(), opts.dashboard_suffix.as_deref()) {
                 (Some(dashboard), None) => {
                     // Single dashboard.
                     annotate::annotate_single_dashboard(
@@ -43,11 +43,11 @@ async fn run_with_client(
                     )
                     .await?;
                 }
-                (None, Some(prefix)) => {
-                    // All dashboards matching prefix.
-                    annotate::annotate_dashboards_by_prefix(
+                (None, Some(suffix)) => {
+                    // All dashboards matching suffix.
+                    annotate::annotate_dashboards_by_suffix(
                         client,
-                        prefix,
+                        suffix,
                         &opts.label,
                         &opts.value,
                         time_override,
@@ -58,12 +58,12 @@ async fn run_with_client(
                 }
                 (Some(_), Some(_)) => {
                     return Err(anyhow!(
-                        "Please specify either --dashboard OR --dashboard-prefix, not both"
+                        "Please specify either --dashboard OR --dashboard-suffix, not both"
                     ));
                 }
                 (None, None) => {
                     return Err(anyhow!(
-                        "Either --dashboard or --dashboard-prefix is required"
+                        "Either --dashboard or --dashboard-suffix is required"
                     ));
                 }
             }
@@ -90,12 +90,12 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn run_with_client_errors_when_both_dashboard_and_prefix_are_set() {
+    async fn run_with_client_errors_when_both_dashboard_and_suffix_are_set() {
         let client = make_dummy_client().await;
 
         let opts = AnnotateOpts {
             dashboard: Some("DashA".to_string()),
-            dashboard_prefix: Some("PrefixB".to_string()),
+            dashboard_suffix: Some("suffixB".to_string()),
             label: "version".to_string(),
             value: "1.2.3".to_string(),
             time: None,
@@ -112,23 +112,23 @@ mod tests {
 
         assert!(
             result.is_err(),
-            "expected error when both dashboard and dashboard_prefix are set"
+            "expected error when both dashboard and dashboard_suffix are set"
         );
 
         let msg = format!("{result:?}");
         assert!(
-            msg.contains("Please specify either --dashboard OR --dashboard-prefix"),
+            msg.contains("Please specify either --dashboard OR --dashboard-suffix"),
             "unexpected error message: {msg}"
         );
     }
 
     #[tokio::test]
-    async fn run_with_client_errors_when_neither_dashboard_nor_prefix_is_set() {
+    async fn run_with_client_errors_when_neither_dashboard_nor_suffix_is_set() {
         let client = make_dummy_client().await;
 
         let opts = AnnotateOpts {
             dashboard: None,
-            dashboard_prefix: None,
+            dashboard_suffix: None,
             label: "version".to_string(),
             value: "1.2.3".to_string(),
             time: None,
@@ -145,12 +145,12 @@ mod tests {
 
         assert!(
             result.is_err(),
-            "expected error when neither dashboard nor dashboard_prefix is set"
+            "expected error when neither dashboard nor dashboard_suffix is set"
         );
 
         let msg = format!("{result:?}");
         assert!(
-            msg.contains("Either --dashboard or --dashboard-prefix is required"),
+            msg.contains("Either --dashboard or --dashboard-suffix is required"),
             "unexpected error message: {msg}"
         );
     }
