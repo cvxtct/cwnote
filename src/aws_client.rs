@@ -18,8 +18,7 @@ pub async fn make_client(region: Option<&str>) -> Result<Client> {
     let region_provider = match region {
         Some(explicit) => {
             // Prefer explicit region, but still fall back to default provider if something’s off
-            RegionProviderChain::first_try(Region::new(explicit.to_string()))
-                .or_default_provider()
+            RegionProviderChain::first_try(Region::new(explicit.to_string())).or_default_provider()
         }
         None => RegionProviderChain::default_provider(),
     };
@@ -31,7 +30,6 @@ pub async fn make_client(region: Option<&str>) -> Result<Client> {
 
     Ok(Client::new(&config))
 }
-
 
 #[cfg(test)]
 mod tests {
