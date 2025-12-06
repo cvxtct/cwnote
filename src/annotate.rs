@@ -1,6 +1,9 @@
 use anyhow::{Context, Result};
 use aws_sdk_cloudwatch::types::DashboardEntry;
 use aws_sdk_cloudwatch::Client;
+use std::fs::File;
+use std::io::prelude::*;
+
 use chrono::Utc;
 use serde_json::{Map, Value};
 
@@ -11,6 +14,14 @@ pub struct WidgetSelector {
 }
 
 impl WidgetSelector {
+    /// Returns `true` if the given widget matches the selector's criteria.
+    ///
+    /// Currently this selector supports filtering by widget title. If
+    /// `title_contains` is set, the widget's `properties.title` field must
+    /// contain the specified substring. If the widget has no title or the
+    /// substring does not match, the method returns `false`.
+    ///
+    /// If no title filter is configured, all widgets are considered a match.
     pub fn matches(&self, widget_obj: &Map<String, Value>) -> bool {
         // If we have a title filter, go check it.
         if let Some(ref title_filter) = self.title_contains {
@@ -25,6 +36,17 @@ impl WidgetSelector {
         }
         true
     }
+}
+
+// Internal helper that saves the modified dashboard to file.
+fn save_to_file(updated_body: &str, dashboard_name: &str) {
+    let ts = Utc::now().format("%Y-%m-%d-%H-%M-%S").to_string();
+    let fname = format!("{}-{}.json", ts, dashboard_name);
+
+    let mut file = File::create(&fname).expect("Could not create export file!");
+
+    file.write_all(updated_body.as_bytes())
+        .expect("Cannot write file!");
 }
 
 /// Internal helper: apply a single annotation object to all matching widgets.
@@ -145,18 +167,26 @@ pub async fn annotate_single_dashboard(
     let updated_body =
         serde_json::to_string(&body).context("failed to serialize updated dashboard body")?;
 
-    client
+    let result = client
         .put_dashboard()
         .dashboard_name(dashboard_name)
-        .dashboard_body(updated_body)
+        .dashboard_body(&updated_body)
         .send()
-        .await
-        .with_context(|| format!("failed to put updated dashboard {dashboard_name}"))?;
+        .await;
 
-    println!(
-        "Annotated {} metric widget(s) on dashboard '{}' with value '{}'",
-        widgets_annotated, dashboard_name, value
-    );
+    match result {
+        Ok(_resp) => {
+            println!(
+                "Annotated {} metric widget(s) on dashboard '{}' with value '{}'",
+                widgets_annotated, dashboard_name, value
+            );
+            // 6) Save dashboard JSON to file.
+            save_to_file(&updated_body, dashboard_name);
+        }
+        Err(err) => {
+            return Err(anyhow::anyhow!("Failed to put updated dashboard: {}", err));
+        }
+    }
 
     Ok(())
 }
@@ -241,6 +271,8 @@ async fn list_dashboards_with_suffix(client: &Client, suffix: &str) -> Result<Ve
 mod tests {
     use super::*;
     use serde_json::json;
+    use std::fs;
+    use tempfile::tempdir;
 
     #[test]
     fn widget_selector_matches_without_filter() {
@@ -424,5 +456,34 @@ mod tests {
             !props0.contains_key("annotations"),
             "widget should remain unannotated when selector doesn't match"
         );
+    }
+
+    #[test]
+    fn test_save_to_file_creates_file_with_correct_contents() {
+        // Use a temporary directory.
+        let dir = tempdir().unwrap();
+        std::env::set_current_dir(&dir).unwrap();
+
+        let updated_body = "{\"ok\":true}";
+        let dashboard_name = "test-dash";
+
+        // Run the function.
+        save_to_file(updated_body, dashboard_name);
+
+        // After running, exactly one file should exist
+        let entries: Vec<_> = fs::read_dir(dir.path()).unwrap().collect();
+        assert_eq!(entries.len(), 1);
+
+        // Get the file path.
+        let path = entries[0].as_ref().unwrap().path();
+        let fname = path.file_name().unwrap().to_string_lossy();
+
+        // Filename must start with dashboard_name.
+        assert!(fname.contains(dashboard_name));
+        assert!(fname.ends_with(".json"));
+
+        // Content must match exactly.
+        let content = fs::read_to_string(&path).unwrap();
+        assert_eq!(content, updated_body);
     }
 }

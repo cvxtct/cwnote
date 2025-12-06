@@ -16,10 +16,7 @@ async fn main() -> Result<()> {
 }
 
 // Extracted so we can unit test decision logic without going through Clap/#[tokio::main].
-async fn run_with_client(
-    client: &aws_sdk_cloudwatch::Client,
-    args: Cli,
-) -> Result<()> {
+async fn run_with_client(client: &aws_sdk_cloudwatch::Client, args: Cli) -> Result<()> {
     match args.command {
         Commands::Annotate(opts) => {
             let time_override = opts.time.as_deref();
@@ -73,12 +70,11 @@ async fn run_with_client(
     Ok(())
 }
 
-
 #[cfg(test)]
 mod tests {
     use super::*;
     use crate::aws_client;
-    use crate::cli::{AnnotateOpts, Commands, Cli};
+    use crate::cli::{AnnotateOpts, Cli, Commands};
 
     // Helper: build a dummy client once for these tests.
     // It won't actually talk to AWS as long as we only hit the error paths
