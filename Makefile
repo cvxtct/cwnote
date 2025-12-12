@@ -15,6 +15,6 @@ clean:
 test: test
 
 release: test
-	cargo build --releaseb
+	cargo build --release
 
 .PHONY: all test clean
