@@ -160,6 +160,7 @@ pub async fn annotate_single_dashboard(
             "[dry-run] {}: would annotate {} metric widget(s) with version '{}'",
             dashboard_name, widgets_annotated, value
         );
+        println!("[dry-run] Annotate object: {:#?}", ann_obj);
         return Ok(());
     }
 
