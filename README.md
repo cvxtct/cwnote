@@ -95,7 +95,7 @@ cwnote annotate [OPTIONS]
 
 ```shell
 cwnote annotate \
---dashboard ServiceDashboard \
+--dashboard MyServiceDashboard \
 --label version \
 --value "$(git describe --tags --long)"
 ```
@@ -104,7 +104,7 @@ cwnote annotate \
 
 ```shell
 cwnote annotate \
---dashboard-suffix Service- \
+--dashboard-suffix MyService- \
 --label deploy \
 --value "release-2025-01-20"
 ```
@@ -115,7 +115,7 @@ Useful if your dashboards have many graphs, but you only want version lines on a
 
 ```shell
 cwnote annotate \
---dashboard ServiceDashboard \
+--dashboard MyServiceDashboard \
 --label version \
 --value "1.9.0" \
 --widget-title-contains "Latency"
@@ -125,7 +125,7 @@ cwnote annotate \
 
 ```shell
 cwnote annotate \
---dashboard ServiceDashboard \
+--dashboard MyServiceDashboard \
 --label incident \
 --value "INC-4435: DB outage" \
 --time "2025-01-20T12:00:00Z"
@@ -135,7 +135,7 @@ cwnote annotate \
 
 ```shell
 cwnote annotate \
---dashboard-suffix -some-service \
+--dashboard-suffix MyService- \
 --label version \
 --value "preview-run" \
 --dry-run
