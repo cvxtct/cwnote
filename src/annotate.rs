@@ -39,14 +39,28 @@ impl WidgetSelector {
 }
 
 // Internal helper that saves the modified dashboard to file.
-fn save_to_file(updated_body: &str, dashboard_name: &str) {
+fn save_to_file(updated_body: &str, dashboard_name: &str) -> Result<()>{
+    // Sanitize dashboard name e.g: strange+dashboard/chars -> strange-dashboard-chars
+    let sanitized_name: String = dashboard_name
+        .chars()
+        .map(|c| {
+            let c = c.to_ascii_lowercase();
+            if c.is_ascii_alphanumeric() || c == '-' {
+                c
+            } else {
+                '-'
+            }
+            })
+            .collect();
+    
     let ts = Utc::now().format("%Y-%m-%d-%H-%M-%S").to_string();
-    let fname = format!("{}-{}.json", ts, dashboard_name);
+    let fname = format!("{}-{}.json", ts, sanitized_name);
 
     let mut file = File::create(&fname).expect("Could not create export file!");
 
     file.write_all(updated_body.as_bytes())
         .expect("Cannot write file!");
+    Ok(())
 }
 
 /// Internal helper: apply a single annotation object to all matching widgets.
@@ -182,7 +196,9 @@ pub async fn annotate_single_dashboard(
                 widgets_annotated, dashboard_name, value
             );
             // 6) Save dashboard JSON to file.
-            save_to_file(&updated_body, dashboard_name);
+            if let Err(err) = save_to_file(&updated_body, dashboard_name) {
+                eprintln!("warning: export failed for '{dashboard_name}': {err}");
+            }
         }
         Err(err) => {
             return Err(anyhow::anyhow!("Failed to put updated dashboard: {}", err));
@@ -274,6 +290,14 @@ mod tests {
     use serde_json::json;
     use std::fs;
     use tempfile::tempdir;
+    use std::sync::{Mutex, OnceLock};
+
+    // Global mutex for cwd changes.
+    static CWD_LOCK: OnceLock<Mutex<()>> = OnceLock::new();
+
+    fn cwd_lock() -> std::sync::MutexGuard<'static, ()> {
+        CWD_LOCK.get_or_init(|| Mutex::new(())).lock().unwrap()
+        }
 
     #[test]
     fn widget_selector_matches_without_filter() {
@@ -461,6 +485,8 @@ mod tests {
 
     #[test]
     fn test_save_to_file_creates_file_with_correct_contents() {
+        // lock acquired here
+        let _guard = cwd_lock(); // lock for the duration of this test section
         // Use a temporary directory.
         let dir = tempdir().unwrap();
         std::env::set_current_dir(&dir).unwrap();
@@ -469,7 +495,7 @@ mod tests {
         let dashboard_name = "test-dash";
 
         // Run the function.
-        save_to_file(updated_body, dashboard_name);
+        let _ = save_to_file(updated_body, dashboard_name);
 
         // After running, exactly one file should exist
         let entries: Vec<_> = fs::read_dir(dir.path()).unwrap().collect();
@@ -481,6 +507,39 @@ mod tests {
 
         // Filename must start with dashboard_name.
         assert!(fname.contains(dashboard_name));
+        assert!(fname.ends_with(".json"));
+
+        // Content must match exactly.
+        let content = fs::read_to_string(&path).unwrap();
+        assert_eq!(content, updated_body);
+    
+        // guard dropped at end of scope -> lock released
+    }
+
+    #[test]
+    fn test_save_to_sanitised_name_file_creates_file_with_correct_contents() {
+        let _guard = cwd_lock(); // lock for the duration of this test section
+        // Use a temporary directory.
+        let dir = tempdir().unwrap();
+        std::env::set_current_dir(&dir).unwrap();
+
+        let updated_body = "{\"ok\":true}";
+        let dashboard_name = "test/dash";
+
+        // Run the function.
+        let _ = save_to_file(updated_body, dashboard_name);
+
+        // After running, exactly one file should exist
+        let entries: Vec<_> = fs::read_dir(dir.path()).unwrap().collect();
+        assert_eq!(entries.len(), 1);
+
+        // Get the file path.
+        let path = entries[0].as_ref().unwrap().path();
+        let fname = path.file_name().unwrap().to_string_lossy();
+
+        let sanitised_name = "test-dash";
+        // Filename must start with dashboard_name.
+        assert!(fname.contains(sanitised_name));
         assert!(fname.ends_with(".json"));
 
         // Content must match exactly.
