@@ -1,8 +1,9 @@
 use anyhow::{Context, Result};
 use aws_sdk_cloudwatch::types::DashboardEntry;
 use aws_sdk_cloudwatch::Client;
-use std::fs::File;
+use std::fs::{self, File};
 use std::io::prelude::*;
+use std::path::PathBuf;
 use log::{info, warn, error};
 
 use chrono::Utc;
@@ -56,8 +57,17 @@ fn save_to_file(updated_body: &str, dashboard_name: &str) -> Result<()>{
     
     let ts = Utc::now().format("%Y-%m-%d-%H-%M-%S").to_string();
     let fname = format!("{}-{}.json", ts, sanitized_name);
+    let export_dir = std::env::var("CWNOTE_EXPORT_DIR")
+        .ok()
+        .filter(|v| !v.trim().is_empty());
+    let path = if let Some(dir) = export_dir {
+        fs::create_dir_all(&dir).expect("Could not create export directory!");
+        PathBuf::from(dir).join(fname)
+    } else {
+        PathBuf::from(fname)
+    };
 
-    let mut file = File::create(&fname).expect("Could not create export file!");
+    let mut file = File::create(&path).expect("Could not create export file!");
 
     file.write_all(updated_body.as_bytes())
         .expect("Cannot write file!");
