@@ -3,6 +3,7 @@ use aws_sdk_cloudwatch::types::DashboardEntry;
 use aws_sdk_cloudwatch::Client;
 use std::fs::File;
 use std::io::prelude::*;
+use log::{info, warn, error};
 
 use chrono::Utc;
 use serde_json::{Map, Value};
@@ -162,19 +163,19 @@ pub async fn annotate_single_dashboard(
     let widgets_annotated = apply_annotation_to_body(&mut body, &ann_obj, selector);
 
     if widgets_annotated == 0 {
-        println!(
-            "{}: no matching metric widgets found (nothing to annotate)",
-            dashboard_name
-        );
+        info!("{dashboard_name}: No matching metric widgets found (nothing to annotate)");
         return Ok(());
     }
 
     if dry_run {
-        println!(
-            "[dry-run] {}: would annotate {} metric widget(s) with version '{}'",
+        info!{
+            target: "dry-run",
+            "{}: would annotate {} metric widget(s) with value: {}.", 
             dashboard_name, widgets_annotated, value
-        );
-        println!("[dry-run] Annotate object: {:#?}", ann_obj);
+        };
+        info!{
+            target: "dry-run",
+            "Annotate object: {:?}.", ann_obj};
         return Ok(());
     }
 
@@ -191,13 +192,13 @@ pub async fn annotate_single_dashboard(
 
     match result {
         Ok(_resp) => {
-            println!(
+            info!(
                 "Annotated {} metric widget(s) on dashboard '{}' with value '{}'",
                 widgets_annotated, dashboard_name, value
             );
             // 6) Save dashboard JSON to file.
             if let Err(err) = save_to_file(&updated_body, dashboard_name) {
-                eprintln!("warning: export failed for '{dashboard_name}': {err}");
+                warn!("Export failed for '{dashboard_name}': {err}");
             }
         }
         Err(err) => {
@@ -221,17 +222,17 @@ pub async fn annotate_dashboards_by_suffix(
     let dashboards = list_dashboards_with_suffix(client, suffix).await?;
 
     if dashboards.is_empty() {
-        println!("No dashboards found with suffix '{}'", suffix);
+        info!("No dashboards found with suffix '{}'", suffix);
         return Ok(());
     }
 
-    println!(
+    info!(
         "{} dashboard(s) match suffix '{}':",
         dashboards.len(),
         suffix
     );
     for d in &dashboards {
-        println!("  - {}", d);
+        info!("  - {}", d);
     }
 
     for name in dashboards {
