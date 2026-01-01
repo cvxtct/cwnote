@@ -35,9 +35,11 @@ pub async fn make_client(region: Option<&str>) -> Result<Client> {
 mod tests {
     use super::*;
 
+    const TEST_REGION: &str = "eu-central-1";
+
     #[tokio::test]
     async fn explicit_region_override_wins() {
-        let client = make_client(Some("eu-central-1"))
+        let client = make_client(Some(TEST_REGION))
             .await
             .expect("client should be created");
 
@@ -47,6 +49,6 @@ mod tests {
             .expect("region must be set")
             .as_ref();
 
-        assert_eq!(region, "eu-central-1");
+        assert_eq!(region, TEST_REGION);
     }
 }

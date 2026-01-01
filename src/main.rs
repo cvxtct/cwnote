@@ -6,8 +6,12 @@ use anyhow::{anyhow, Result};
 use clap::Parser;
 use cli::{Cli, Commands};
 
+const DEFAULT_LOG_LEVEL: &str = "info";
 #[tokio::main]
 async fn main() -> Result<()> {
+    env_logger::Builder::from_env(env_logger::Env::default().default_filter_or(DEFAULT_LOG_LEVEL))
+        .init();
+    
     let args = Cli::parse();
 
     let client = aws_client::make_client(args.region.as_deref()).await?;
@@ -76,11 +80,17 @@ mod tests {
     use crate::aws_client;
     use crate::cli::{AnnotateOpts, Cli, Commands};
 
+    const TEST_REGION: &str = "eu-central-1";
+    const TEST_DASHBOARD: &str = "DashA";
+    const TEST_SUFFIX: &str = "suffixB";
+    const TEST_LABEL: &str = "version";
+    const TEST_VALUE: &str = "1.2.3";
+
     // Helper: build a dummy client once for these tests.
     // It won't actually talk to AWS as long as we only hit the error paths
     // (we return before calling annotate::*).
     async fn make_dummy_client() -> aws_sdk_cloudwatch::Client {
-        aws_client::make_client(Some("eu-central-1"))
+        aws_client::make_client(Some(TEST_REGION))
             .await
             .expect("failed to create dummy client")
     }
@@ -90,10 +100,10 @@ mod tests {
         let client = make_dummy_client().await;
 
         let opts = AnnotateOpts {
-            dashboard: Some("DashA".to_string()),
-            dashboard_suffix: Some("suffixB".to_string()),
-            label: "version".to_string(),
-            value: "1.2.3".to_string(),
+            dashboard: Some(TEST_DASHBOARD.to_string()),
+            dashboard_suffix: Some(TEST_SUFFIX.to_string()),
+            label: TEST_LABEL.to_string(),
+            value: TEST_VALUE.to_string(),
             time: None,
             dry_run: false,
             widget_title_contains: None,
@@ -125,8 +135,8 @@ mod tests {
         let opts = AnnotateOpts {
             dashboard: None,
             dashboard_suffix: None,
-            label: "version".to_string(),
-            value: "1.2.3".to_string(),
+            label: TEST_LABEL.to_string(),
+            value: TEST_VALUE.to_string(),
             time: None,
             dry_run: false,
             widget_title_contains: None,
