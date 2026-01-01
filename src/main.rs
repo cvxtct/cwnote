@@ -6,8 +6,11 @@ use anyhow::{anyhow, Result};
 use clap::Parser;
 use cli::{Cli, Commands};
 
+
 #[tokio::main]
 async fn main() -> Result<()> {
+    env_logger::Builder::from_env(env_logger::Env::default().default_filter_or("info")).init();
+    
     let args = Cli::parse();
 
     let client = aws_client::make_client(args.region.as_deref()).await?;
