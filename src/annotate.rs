@@ -9,6 +9,17 @@ use log::{info, warn, error};
 use chrono::Utc;
 use serde_json::{Map, Value};
 
+const EXPORT_DIR_ENV: &str = "CWNOTE_EXPORT_DIR";
+const WIDGET_TYPE_METRIC: &str = "metric";
+const JSON_KEY_PROPERTIES: &str = "properties";
+const JSON_KEY_TITLE: &str = "title";
+const JSON_KEY_TYPE: &str = "type";
+const JSON_KEY_ANNOTATIONS: &str = "annotations";
+const JSON_KEY_VERTICAL: &str = "vertical";
+const JSON_KEY_LABEL: &str = "label";
+const JSON_KEY_VALUE: &str = "value";
+const TS_FORMAT: &str = "%Y-%m-%d-%H-%M-%S";
+
 /// Controlls which widget we annotate.
 #[derive(Debug, Clone)]
 pub struct WidgetSelector {
@@ -28,8 +39,8 @@ impl WidgetSelector {
         // If we have a title filter, go check it.
         if let Some(ref title_filter) = self.title_contains {
             let title = widget_obj
-                .get("properties")
-                .and_then(|p| p.get("title"))
+                .get(JSON_KEY_PROPERTIES)
+                .and_then(|p| p.get(JSON_KEY_TITLE))
                 .and_then(|t| t.as_str())
                 .unwrap_or("");
             if !title.contains(title_filter) {
@@ -55,9 +66,9 @@ fn save_to_file(updated_body: &str, dashboard_name: &str) -> Result<()>{
             })
             .collect();
     
-    let ts = Utc::now().format("%Y-%m-%d-%H-%M-%S").to_string();
+    let ts = Utc::now().format(TS_FORMAT).to_string();
     let fname = format!("{}-{}.json", ts, sanitized_name);
-    let export_dir = std::env::var("CWNOTE_EXPORT_DIR")
+    let export_dir = std::env::var(EXPORT_DIR_ENV)
         .ok()
         .filter(|v| !v.trim().is_empty());
     let path = if let Some(dir) = export_dir {
@@ -87,7 +98,8 @@ fn apply_annotation_to_body(
         for widget in widgets.iter_mut() {
             if let Some(widget_obj) = widget.as_object_mut() {
                 // Only metric widgets.
-                let is_metric = widget_obj.get("type").and_then(|t| t.as_str()) == Some("metric");
+                let is_metric =
+                    widget_obj.get(JSON_KEY_TYPE).and_then(|t| t.as_str()) == Some(WIDGET_TYPE_METRIC);
                 if !is_metric {
                     continue;
                 }
@@ -98,21 +110,21 @@ fn apply_annotation_to_body(
                 }
 
                 let props_val = widget_obj
-                    .entry("properties")
+                    .entry(JSON_KEY_PROPERTIES)
                     .or_insert_with(|| Value::Object(Map::new()));
                 let props_obj = props_val
                     .as_object_mut()
                     .expect("properties should be object");
 
                 let anns_val = props_obj
-                    .entry("annotations")
+                    .entry(JSON_KEY_ANNOTATIONS)
                     .or_insert_with(|| Value::Object(Map::new()));
                 let anns_obj = anns_val
                     .as_object_mut()
                     .expect("annotations should be object");
 
                 let vertical_val = anns_obj
-                    .entry("vertical")
+                    .entry(JSON_KEY_VERTICAL)
                     .or_insert_with(|| Value::Array(Vec::new()));
                 let vertical_arr = vertical_val
                     .as_array_mut()
@@ -161,10 +173,10 @@ pub async fn annotate_single_dashboard(
     // 3) Build annotation object
     let mut ann_obj = Map::new();
     ann_obj.insert(
-        "label".to_string(),
+        JSON_KEY_LABEL.to_string(),
         Value::String(format!("{label}: {value}")),
     );
-    ann_obj.insert("value".to_string(), Value::String(ts));
+    ann_obj.insert(JSON_KEY_VALUE.to_string(), Value::String(ts));
 
     // Optional: color, visible, etc.
     // ann_obj.insert("color".into(), Value::String("#ff9900".into()));
@@ -309,6 +321,31 @@ mod tests {
     fn cwd_lock() -> std::sync::MutexGuard<'static, ()> {
         CWD_LOCK.get_or_init(|| Mutex::new(())).lock().unwrap()
         }
+
+    struct EnvVarGuard {
+        key: String,
+        prev: Option<String>,
+    }
+
+    impl EnvVarGuard {
+        fn unset(key: &str) -> Self {
+            let prev = std::env::var(key).ok();
+            std::env::remove_var(key);
+            Self {
+                key: key.to_string(),
+                prev,
+            }
+        }
+    }
+
+    impl Drop for EnvVarGuard {
+        fn drop(&mut self) {
+            match &self.prev {
+                Some(val) => std::env::set_var(&self.key, val),
+                None => std::env::remove_var(&self.key),
+            }
+        }
+    }
 
     #[test]
     fn widget_selector_matches_without_filter() {
@@ -498,6 +535,7 @@ mod tests {
     fn test_save_to_file_creates_file_with_correct_contents() {
         // lock acquired here
         let _guard = cwd_lock(); // lock for the duration of this test section
+        let _env_guard = EnvVarGuard::unset(EXPORT_DIR_ENV);
         // Use a temporary directory.
         let dir = tempdir().unwrap();
         std::env::set_current_dir(&dir).unwrap();
@@ -530,6 +568,7 @@ mod tests {
     #[test]
     fn test_save_to_sanitised_name_file_creates_file_with_correct_contents() {
         let _guard = cwd_lock(); // lock for the duration of this test section
+        let _env_guard = EnvVarGuard::unset(EXPORT_DIR_ENV);
         // Use a temporary directory.
         let dir = tempdir().unwrap();
         std::env::set_current_dir(&dir).unwrap();
