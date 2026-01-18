@@ -6,6 +6,9 @@ test:
 test-verbose:
 	cargo test -p cwnote -- --nocapture
 
+format:
+	cargo fmt
+
 linting:
 	cargo clippy
 
