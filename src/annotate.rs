@@ -1,10 +1,10 @@
 use anyhow::{Context, Result};
 use aws_sdk_cloudwatch::types::DashboardEntry;
 use aws_sdk_cloudwatch::Client;
+use log::{error, info, warn};
 use std::fs::{self, File};
 use std::io::prelude::*;
 use std::path::PathBuf;
-use log::{info, warn, error};
 
 use chrono::Utc;
 use serde_json::{Map, Value};
@@ -52,7 +52,7 @@ impl WidgetSelector {
 }
 
 // Internal helper that saves the modified dashboard to file.
-fn save_to_file(updated_body: &str, dashboard_name: &str) -> Result<()>{
+fn save_to_file(updated_body: &str, dashboard_name: &str) -> Result<()> {
     // Sanitize dashboard name e.g: strange+dashboard/chars -> strange-dashboard-chars
     let sanitized_name: String = dashboard_name
         .chars()
@@ -63,9 +63,9 @@ fn save_to_file(updated_body: &str, dashboard_name: &str) -> Result<()>{
             } else {
                 '-'
             }
-            })
-            .collect();
-    
+        })
+        .collect();
+
     let ts = Utc::now().format(TS_FORMAT).to_string();
     let fname = format!("{}-{}.json", ts, sanitized_name);
     let export_dir = std::env::var(EXPORT_DIR_ENV)
@@ -98,8 +98,8 @@ fn apply_annotation_to_body(
         for widget in widgets.iter_mut() {
             if let Some(widget_obj) = widget.as_object_mut() {
                 // Only metric widgets.
-                let is_metric =
-                    widget_obj.get(JSON_KEY_TYPE).and_then(|t| t.as_str()) == Some(WIDGET_TYPE_METRIC);
+                let is_metric = widget_obj.get(JSON_KEY_TYPE).and_then(|t| t.as_str())
+                    == Some(WIDGET_TYPE_METRIC);
                 if !is_metric {
                     continue;
                 }
@@ -190,14 +190,14 @@ pub async fn annotate_single_dashboard(
     }
 
     if dry_run {
-        info!{
+        info! {
             target: "dry-run",
-            "{}: would annotate {} metric widget(s) with value: {}.", 
+            "{}: would annotate {} metric widget(s) with value: {}.",
             dashboard_name, widgets_annotated, value
         };
-        info!{
-            target: "dry-run",
-            "Annotate object: {:?}.", ann_obj};
+        info! {
+        target: "dry-run",
+        "Annotate object: {:?}.", ann_obj};
         return Ok(());
     }
 
@@ -312,15 +312,15 @@ mod tests {
     use super::*;
     use serde_json::json;
     use std::fs;
-    use tempfile::tempdir;
     use std::sync::{Mutex, OnceLock};
+    use tempfile::tempdir;
 
     // Global mutex for cwd changes.
     static CWD_LOCK: OnceLock<Mutex<()>> = OnceLock::new();
 
     fn cwd_lock() -> std::sync::MutexGuard<'static, ()> {
         CWD_LOCK.get_or_init(|| Mutex::new(())).lock().unwrap()
-        }
+    }
 
     struct EnvVarGuard {
         key: String,
@@ -561,7 +561,7 @@ mod tests {
         // Content must match exactly.
         let content = fs::read_to_string(&path).unwrap();
         assert_eq!(content, updated_body);
-    
+
         // guard dropped at end of scope -> lock released
     }
 
