@@ -1,7 +1,7 @@
 use anyhow::{Context, Result};
 use aws_sdk_cloudwatch::types::DashboardEntry;
 use aws_sdk_cloudwatch::Client;
-use log::{error, info, warn};
+use log::{info, warn};
 use std::fs::{self, File};
 use std::io::prelude::*;
 use std::path::PathBuf;
